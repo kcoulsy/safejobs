@@ -35,26 +35,20 @@ RUN useradd -G www-data,root -u 1000 -d /home/dev dev
 RUN mkdir -p /home/dev/.composer && \
     chown -R dev:dev /home/dev
 
-# Set working directory and create necessary directories
+# Set working directory
 WORKDIR /var/www
+
+# Create Laravel directory structure
+COPY --chown=dev:www-data . /var/www
+
 RUN mkdir -p /var/www/vendor && \
     mkdir -p /var/www/storage/logs && \
     mkdir -p /var/www/storage/framework/sessions && \
     mkdir -p /var/www/storage/framework/views && \
     mkdir -p /var/www/storage/framework/cache && \
-    mkdir -p /var/www/bootstrap/cache
-
-# Set permissions before copying files
-RUN chown -R dev:www-data /var/www && \
+    mkdir -p /var/www/bootstrap/cache && \
+    chown -R dev:www-data /var/www && \
     chmod -R 775 /var/www
-
-# Copy existing application directory
-COPY --chown=dev:www-data . /var/www
-
-# Ensure proper permissions after copy
-RUN chmod -R 775 /var/www/storage && \
-    chmod -R 775 /var/www/bootstrap/cache && \
-    chmod -R 775 /var/www/vendor
 
 # Add PHP and Composer to PATH
 ENV PATH="/usr/bin:/usr/local/bin:/usr/local/sbin:${PATH}"
