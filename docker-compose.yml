@@ -9,8 +9,7 @@ services:
     restart: unless-stopped
     working_dir: /var/www
     volumes:
-      - ./:/var/www:cached
-      - ./vendor:/var/www/vendor:cached
+      - ./:/var/www
     networks:
       - app-network
 
@@ -21,7 +20,7 @@ services:
     ports:
       - "8000:80"
     volumes:
-      - ./:/var/www:cached
+      - ./:/var/www
       - ./docker/nginx/conf.d:/etc/nginx/conf.d
     networks:
       - app-network

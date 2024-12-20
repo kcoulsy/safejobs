@@ -1,4 +1,8 @@
+# Use an official PHP runtime as a parent image
 FROM php:8.2-fpm
+
+# Set working directory
+WORKDIR /var/www/html
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -22,35 +26,15 @@ RUN docker-php-ext-install pdo_pgsql mbstring exif pcntl bcmath gd intl zip
 # Install Redis extension
 RUN pecl install redis && docker-php-ext-enable redis
 
-# Install Composer globally
+# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-RUN chmod +x /usr/bin/composer
-RUN ln -s /usr/bin/composer /usr/local/bin/composer
 
-# Create symbolic link for PHP
-RUN ln -s /usr/local/bin/php /usr/local/sbin/php
+# Copy application files
+COPY . .
 
-# Create system user to run Composer and Artisan Commands
-RUN useradd -G www-data,root -u 1000 -d /home/dev dev
-RUN mkdir -p /home/dev/.composer && \
-    chown -R dev:dev /home/dev
+# Install application dependencies
+RUN composer install
 
-# Set working directory
-WORKDIR /var/www
 
-# Create Laravel directory structure
-COPY --chown=dev:www-data . /var/www
-
-RUN mkdir -p /var/www/vendor && \
-    mkdir -p /var/www/storage/logs && \
-    mkdir -p /var/www/storage/framework/sessions && \
-    mkdir -p /var/www/storage/framework/views && \
-    mkdir -p /var/www/storage/framework/cache && \
-    mkdir -p /var/www/bootstrap/cache && \
-    chown -R dev:www-data /var/www && \
-    chmod -R 775 /var/www
-
-# Add PHP and Composer to PATH
-ENV PATH="/usr/bin:/usr/local/bin:/usr/local/sbin:${PATH}"
-
-USER dev
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
