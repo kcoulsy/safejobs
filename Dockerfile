@@ -1,10 +1,11 @@
-# Use an official PHP runtime as a parent image
-FROM php:8.2-fpm
+FROM serversideup/php:8.3-fpm-nginx
 
-# Set working directory
-WORKDIR /var/www/html
+ENV PHP_OPCACHE_ENABLE=1
 
-# Install system dependencies
+USER root
+
+RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
+RUN apt-get install -y nodejs
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -17,24 +18,25 @@ RUN apt-get update && apt-get install -y \
     libicu-dev \
     libzip-dev
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Install PHP extensions
 RUN docker-php-ext-install pdo_pgsql mbstring exif pcntl bcmath gd intl zip
+RUN docker-php-ext-enable redis
 
-# Install Redis extension
-RUN pecl install redis && docker-php-ext-enable redis
+# Create storage directory structure before copying files
+RUN mkdir -p /var/www/html/storage/framework/{sessions,views,cache} \
+    && mkdir -p /var/www/html/storage/logs \
+    && mkdir -p /var/www/html/bootstrap/cache
 
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Set permissions before copying files
+RUN chmod -R 777 /var/www/html/storage \
+    && chmod -R 777 /var/www/html/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html
 
-# Copy application files
-COPY . .
+COPY --chown=www-data:www-data . /var/www/html
 
-# Install application dependencies
-RUN composer install
+# Set permissions again after copying files to ensure all new files have correct permissions
+RUN chmod -R 777 /var/www/html/storage \
+    && chmod -R 777 /var/www/html/bootstrap/cache
 
+USER www-data
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN composer install --no-interaction --optimize-autoloader --no-dev
